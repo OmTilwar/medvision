@@ -1,9 +1,9 @@
-\documentclass[11pt]{article}        % set main text size
+\documentclass[10pt]{article}        % reduced from 11pt for denser content
 \usepackage[a4paper,                 % set paper size to a4paper
-top=0.5in,                           % specify top page margin
-bottom=0.5in,                        % specify bottom page margin
-left=0.5in,                          % specify left page margin
-right=0.5in]{geometry}               % specify right page margin
+top=0.4in,                           % specify top page margin
+bottom=0.4in,                        % specify bottom page margin
+left=0.45in,                         % specify left page margin
+right=0.45in]{geometry}              % specify right page margin
 \usepackage{fontawesome5}                      
 \usepackage{XCharter}                % set font
 \usepackage[T1]{fontenc}             % output encoding
@@ -35,7 +35,7 @@ right=0.5in]{geometry}               % specify right page margin
 
 % format bullet points: size, white space above and below, white space between bullets
 \renewcommand\labelitemi{$\vcenter{\hbox{\small$\bullet$}}$}
-\setlist[itemize]{itemsep=-2pt, leftmargin=12pt, topsep=7pt}
+\setlist[itemize]{itemsep=-2pt, leftmargin=12pt, topsep=4pt}
 
 % resume starts here
 \begin{document}
@@ -49,7 +49,7 @@ right=0.5in]{geometry}               % specify right page margin
 \centerline{\href{tel:+916263928015}{+916263928015} |
 \href{mailto:omtilwar@gmail.com}{omtilwar@gmail.com} | \href{https://www.linkedin.com/in/omtilwar}{linkedin.com/in/omtilwar} | \href{https://github.com/omtilwar}{github.com/omtilwar}}
 
-\vspace{-20pt}
+\vspace{-18pt}
 
 \section*{Education}
 \textbf{Indian Institute of Information Technology, Nagpur} \hfill August 2023 - May 2027 \\
@@ -72,7 +72,7 @@ right=0.5in]{geometry}               % specify right page margin
 \section*{Experience}
 
 \textbf{Research Intern,} {IIIT} -- Nagpur, Maharashtra \hfill August 2025 -- February 2026 \\
-\vspace{-11pt}
+\vspace{-9pt}
 \begin{itemize}
   \item Developed deep learning models (YOLOv8) for dense object detection, performing \textbf{\textcolor{NavyBlue}{data preprocessing}} and feature engineering on 3,200+ annotated instances to improve mAP by \textbf{\textcolor{NavyBlue}{8.4\%}} -- transferable to medical lesion detection.
   \item Built end-to-end ML pipelines from data ingestion to model training, conducted systematic experiments across hyperparameter configurations, and documented results for \textbf{\textcolor{NavyBlue}{reproducibility}}.
@@ -80,34 +80,36 @@ right=0.5in]{geometry}               % specify right page margin
   \item Published findings in the \textbf{\textcolor{NavyBlue}{IEEE Xplore}} digital library (April 2026): \href{https://ieeexplore.ieee.org/document/11448187/}{IEEE Document 11448187}.
 \end{itemize}
 
-\vspace{-21.5pt}
+\vspace{-19pt}
 
 % projects section
 \section*{Projects}
 
 \textbf{MedVision: Medical Imaging AI Toolkit | Python, PyTorch, OpenCV, FastAPI, Docker} \hfill \href{https://github.com/OmTilwar/medvision}{\faGithub} \\
-\vspace{-11pt}
+\vspace{-9pt}
 \begin{itemize}
-  \item Fine-tuned ResNet-18 classifier on 5,800+ chest X-rays, achieving \textbf{\textcolor{NavyBlue}{91.8\% accuracy}}, \textbf{\textcolor{NavyBlue}{0.97 AUC-ROC}}, and \textbf{\textcolor{NavyBlue}{92.3\% sensitivity}}; built U-Net segmenter from scratch achieving \textbf{\textcolor{NavyBlue}{0.83 Dice score}} / 0.71 IoU.
+  \item Fine-tuned ResNet-18 classifier on \textbf{\textcolor{NavyBlue}{5,800+ real chest X-rays}} with differential learning rates and layer freezing, achieving \textbf{\textcolor{NavyBlue}{91.8\% accuracy}}, \textbf{\textcolor{NavyBlue}{0.97 AUC-ROC}}, and \textbf{\textcolor{NavyBlue}{92.3\% sensitivity}} on a 624-image held-out test set.
+  \item Built U-Net segmenter from scratch (17M params, Dice+BCE loss, cosine annealing) achieving \textbf{\textcolor{NavyBlue}{0.83 Dice}} / 0.71 IoU; implemented medical preprocessing with \textbf{\textcolor{NavyBlue}{CLAHE}} enhancement and CT windowing presets (lung, bone, brain).
   \item Developed \textbf{\textcolor{NavyBlue}{HIPAA-compliant}} DICOM de-identification following \textbf{\textcolor{NavyBlue}{PS3.15 Annex E}} (25+ PHI tags, UID regeneration) and OCR pipeline with regex-based \textbf{\textcolor{NavyBlue}{NER}} for patient name, MRN, date, and SSN detection.
   \item Created \textbf{\textcolor{NavyBlue}{Grad-CAM}} interpretability for per-class attention maps; deployed as Docker-containerized \textbf{\textcolor{NavyBlue}{FastAPI}} REST API (6 endpoints), validated with \textbf{\textcolor{NavyBlue}{48 automated tests}}.
 \end{itemize}
 
-\textbf{AuthNet: Deep Metric Learning Pipeline | Python, PyTorch, Scikit-Learn, ONNX} \hfill \href{https://github.com/OmTilwar/authnet}{\faGithub} \\
-\vspace{-11pt}
+\textbf{AuthNet: Deep Metric Learning for Product Authentication | Python, PyTorch, ONNX} \hfill \href{https://github.com/OmTilwar/authnet}{\faGithub} \\
+\vspace{-9pt}
 \begin{itemize}
-  \item Trained a ResNet-18 backbone with \textbf{\textcolor{NavyBlue}{Multi-Similarity Loss}} to generate 128-dim embeddings across 47 texture classes, achieving \textbf{\textcolor{NavyBlue}{64.5\% Recall@1}} (31x above random baseline), with full experiment tracking.
-  \item Implemented custom \textbf{\textcolor{NavyBlue}{Grad-CAM}} for embedding architectures to ensure model \textbf{\textcolor{NavyBlue}{interpretability}}, and optimized inference via \textbf{\textcolor{NavyBlue}{ONNX Runtime}} with INT8 quantization (4x compression, 43.3 MB $\rightarrow$ 10.9 MB).
+  \item Trained a ResNet-18 backbone with \textbf{\textcolor{NavyBlue}{Multi-Similarity Loss}} and hard-negative mining to learn 128-dim embeddings across 47 texture classes, achieving \textbf{\textcolor{NavyBlue}{64.5\% Recall@1}} (31x above random), 48.97\% mAP, and 0.70 NMI on 1,880 test samples.
+  \item Implemented custom \textbf{\textcolor{NavyBlue}{Grad-CAM}} for embedding architectures and \textbf{\textcolor{NavyBlue}{t-SNE}} visualization confirming clear cluster separation; built cosine-similarity authentication API with confidence scoring.
+  \item Optimized for edge deployment via \textbf{\textcolor{NavyBlue}{ONNX Runtime}} with INT8 post-training quantization (\textbf{\textcolor{NavyBlue}{4x compression}}, 43.3 MB $\rightarrow$ 10.9 MB, lossless: max diff $<8\mathrm{e}{-8}$), achieving \textbf{\textcolor{NavyBlue}{2.4ms}} GPU / 8ms CPU inference.
 \end{itemize}
 
 \textbf{FinSight AI: LLM-Powered RAG Pipeline | Python, FastAPI, LLM, Pinecone} \hfill \href{https://github.com/OmTilwar/FinSight-AI}{\faGithub} \\
-\vspace{-11pt}
+\vspace{-9pt}
 \begin{itemize}
-  \item Engineered an \textbf{\textcolor{NavyBlue}{LLM-based}} conversational AI system integrating a local Llama-3 model with \textbf{\textcolor{NavyBlue}{prompt engineering}} and context injection for privacy-first inference.
-  \item Built a 4-tier hybrid \textbf{\textcolor{NavyBlue}{RAG pipeline}}: TF-IDF keyword matching $\rightarrow$ Pinecone \textbf{\textcolor{NavyBlue}{vector search}} $\rightarrow$ deterministic function-calling $\rightarrow$ LLM generation, achieving \textbf{\textcolor{NavyBlue}{sub-second}} retrieval.
+  \item Engineered an \textbf{\textcolor{NavyBlue}{LLM-based}} conversational AI system integrating a local Llama-3 model with \textbf{\textcolor{NavyBlue}{prompt engineering}} and context injection for privacy-first inference — no data leaves the device.
+  \item Built a 4-tier hybrid \textbf{\textcolor{NavyBlue}{RAG pipeline}}: TF-IDF keyword matching $\rightarrow$ Pinecone \textbf{\textcolor{NavyBlue}{vector search}} $\rightarrow$ deterministic function-calling $\rightarrow$ LLM generation, achieving \textbf{\textcolor{NavyBlue}{sub-second}} retrieval across structured banking data.
 \end{itemize}
 
-\vspace{-21.5pt}
+\vspace{-19pt}
 
 \section*{Achievements}
 
