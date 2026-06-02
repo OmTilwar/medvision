@@ -15,6 +15,8 @@ import shutil
 import urllib.request
 from pathlib import Path
 
+import numpy as np
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import config
 

@@ -233,7 +233,7 @@ def train(
                 },
             }
             torch.save(checkpoint, config.SEGMENTER_BEST_PATH)
-            print(f"  ★ New best Dice: {best_dice:.4f} — saved")
+            print(f"  * New best Dice: {best_dice:.4f} - saved")
         else:
             patience_counter += 1
         

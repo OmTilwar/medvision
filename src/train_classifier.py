@@ -260,7 +260,7 @@ def train(
                 },
             }
             torch.save(checkpoint, config.CLASSIFIER_BEST_PATH)
-            print(f"  ★ New best! Score: {best_val_acc:.4f} — saved")
+            print(f"  * New best! Score: {best_val_acc:.4f} - saved")
         else:
             patience_counter += 1
         

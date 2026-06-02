@@ -237,9 +237,16 @@ def paired_random_transform(
     """
     image_size = image_size or config.SEG_IMAGE_SIZE
     
-    # Convert grayscale to RGB for pretrained backbone
-    if image.mode == "L":
-        image = image.convert("RGB")
+    # Handle input channels based on model config
+    if config.UNET_IN_CHANNELS == 1:
+        # Keep grayscale for U-Net with 1 input channel
+        if image.mode != "L":
+            image = image.convert("L")
+    else:
+        # Convert to RGB for pretrained backbone / 3-channel U-Net
+        if image.mode == "L":
+            image = image.convert("RGB")
+    
     if mask.mode != "L":
         mask = mask.convert("L")
     
@@ -264,10 +271,14 @@ def paired_random_transform(
     mask_tensor = transforms.ToTensor()(mask)
     
     # Normalize image (not mask!)
-    image_tensor = transforms.Normalize(
-        mean=MedicalNormalize.IMAGENET_MEAN,
-        std=MedicalNormalize.IMAGENET_STD,
-    )(image_tensor)
+    if config.UNET_IN_CHANNELS == 1:
+        # Simple normalization for grayscale
+        image_tensor = transforms.Normalize(mean=[0.5], std=[0.5])(image_tensor)
+    else:
+        image_tensor = transforms.Normalize(
+            mean=MedicalNormalize.IMAGENET_MEAN,
+            std=MedicalNormalize.IMAGENET_STD,
+        )(image_tensor)
     
     # Binarize mask (threshold at 0.5)
     mask_tensor = (mask_tensor > 0.5).float()
