@@ -1,0 +1,31 @@
+# Data (too large for git)
+data/
+*.dcm
+
+# Model weights
+outputs/models/*.pth
+outputs/models/*.onnx
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Virtual environments
+venv/
+.env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
