@@ -1,5 +1,5 @@
 """
-Unit tests for MedVision Clinical Ragas Evaluation Module.
+Unit tests for MedVision Clinical Ragas Evaluation Module with 2-Stage Retrieval & Cross-Encoder.
 """
 
 import os
@@ -10,7 +10,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from src.ragas_clinical_eval import (
     MedVisionRagasEvaluator,
     CLINICAL_GOLD_BENCHMARK,
-    clean_tokens
+    clean_tokens,
+    expand_clinical_query
 )
 
 class TestMedVisionRagas:
@@ -22,6 +23,10 @@ class TestMedVisionRagas:
         tokens = clean_tokens("Pneumonia bilateral lower-lobe consolidation")
         assert "pneumonia" in tokens
         assert "consolidation" in tokens
+
+    def test_expand_clinical_query(self):
+        exp = expand_clinical_query("What are the primary findings?")
+        assert "findings" in exp or "pathology" in exp
 
     def test_context_precision(self, evaluator):
         retrieved = [(2, "Findings chunk", 0.95), (0, "Header chunk", 0.40)]
@@ -46,8 +51,36 @@ class TestMedVisionRagas:
         faith = evaluator.compute_faithfulness(response, report)
         assert faith == 0.0
 
+    def test_retrieve_naive(self, evaluator):
+        chunks = [
+            "PATIENT ID: 12345",
+            "FINDINGS: Bilateral lower lobe patchy consolidation consistent with bacterial pneumonia.",
+            "IMPRESSION: Bacterial pneumonia."
+        ]
+        res = evaluator.retrieve_naive("What are findings?", chunks, top_k=2)
+        assert len(res) == 2
+
+    def test_retrieve_hybrid_rrf(self, evaluator):
+        chunks = [
+            "PATIENT ID: 12345",
+            "FINDINGS: Bilateral lower lobe patchy consolidation consistent with bacterial pneumonia.",
+            "IMPRESSION: Bacterial pneumonia."
+        ]
+        res = evaluator.retrieve_hybrid_rrf("What are findings?", chunks, top_k=2)
+        assert len(res) == 2
+        assert any(r[0] == 1 for r in res)
+
+    def test_retrieve_cross_encoder_rerank(self, evaluator):
+        chunks = [
+            "PATIENT ID: 12345",
+            "FINDINGS: Bilateral lower lobe patchy consolidation consistent with bacterial pneumonia.",
+            "IMPRESSION: Bacterial pneumonia."
+        ]
+        res = evaluator.retrieve_cross_encoder_rerank("What are primary radiological findings?", chunks, top_k=2)
+        assert len(res) == 2
+
     def test_full_evaluation_run(self, evaluator):
-        res = evaluator.evaluate_model("medvision")
+        res = evaluator.evaluate_model("medvision", retrieval_strategy="cross_encoder")
         assert "context_precision" in res
         assert "context_recall" in res
         assert "faithfulness" in res

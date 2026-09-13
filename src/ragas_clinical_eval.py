@@ -2,7 +2,7 @@
 MedVision: Clinical Document QA & HIPAA Compliance Evaluation with Ragas
 ========================================================================
 Evaluates Medical Report Grounding & Zero-Hallucination QA across 4 Ragas dimensions:
-  1. Context Precision  -> Clinical Findings & Impression Section Ranking
+  1. Context Precision  -> Radiology Findings & Impression Section Ranking (RRF + Cross-Encoder)
   2. Context Recall     -> Anatomical & Pathology Coverage (Consolidation, Effusion, Atelectasis)
   3. Faithfulness       -> Strict Clinical Grounding (Zero Hallucination of phantom pathologies)
   4. Answer Relevancy   -> Physician Prompt & Radiologist Query Alignment
@@ -13,12 +13,13 @@ import sys
 import json
 import time
 import re
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 import pandas as pd
 import numpy as np
 
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+from rank_bm25 import BM25Okapi
 
 # Gold Standard Clinical Radiology & De-identification Benchmark Cases
 CLINICAL_GOLD_BENCHMARK = [
@@ -92,30 +93,114 @@ CLINICAL_GOLD_BENCHMARK = [
     }
 ]
 
+CLINICAL_QUERY_SYNONYMS = {
+    "findings": ["radiological findings", "abnormalities", "observations", "pathology"],
+    "cardiothoracic": ["cardiomegaly", "heart size", "silhouette", "cardiovascular"],
+    "nodule": ["mass", "lesion", "granuloma", "parenchyma"],
+    "phi": ["protected health information", "patient identifier", "anonymized", "de-identified", "mrn"],
+}
+
 def clean_tokens(text: str) -> List[str]:
     return re.findall(r'\b\w+\b', text.lower())
 
+def expand_clinical_query(query: str) -> str:
+    """Expands clinical queries with anatomical and pathology synonyms."""
+    tokens = clean_tokens(query)
+    expanded = set(tokens)
+    for key, syns in CLINICAL_QUERY_SYNONYMS.items():
+        if key in tokens or any(w in tokens for w in key.split()):
+            for s in syns:
+                expanded.update(clean_tokens(s))
+    return " ".join(expanded)
+
 class MedVisionRagasEvaluator:
     def __init__(self):
-        print("Initializing MedVision Clinical Ragas Evaluator...")
+        print("Initializing MedVision Clinical Ragas Evaluator (Bi-Encoder + Cross-Encoder)...")
         self.encoder = SentenceTransformer("all-MiniLM-L6-v2")
+        self.cross_encoder = None
+        try:
+            from sentence_transformers import CrossEncoder
+            self.cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+        except Exception:
+            self.cross_encoder = None
 
-    def retrieve_clinical_sections(self, query: str, chunks: List[str], top_k=3):
-        """Hybrid lexical-semantic retrieval for clinical findings."""
-        q_tokens = set(clean_tokens(query))
+    def retrieve_naive(self, query: str, chunks: List[str], top_k=3) -> List[Tuple[int, str, float]]:
+        """Baseline naive dense bi-encoder cosine similarity retrieval."""
         q_emb = self.encoder.encode([query])
-        chunk_embs = self.encoder.encode(chunks)
-        dense_scores = cosine_similarity(q_emb, chunk_embs).flatten()
+        c_embs = self.encoder.encode(chunks)
+        dense_sims = cosine_similarity(q_emb, c_embs)[0]
         
-        combined_scores = []
+        ranked = [(i, chunk, float(dense_sims[i])) for i, chunk in enumerate(chunks)]
+        ranked.sort(key=lambda x: x[2], reverse=True)
+        return ranked[:top_k]
+
+    def retrieve_hybrid_rrf(self, query: str, chunks: List[str], top_k=3, k_rrf=60) -> List[Tuple[int, str, float]]:
+        """
+        Stage 1: Hybrid BM25 Okapi + Dense Bi-Encoder with Reciprocal Rank Fusion.
+        RRF_score(d) = 1/(k + rank_bm25) + 1/(k + rank_dense)
+        """
+        exp_q = expand_clinical_query(query)
+        q_tokens = clean_tokens(exp_q)
+        
+        # 1. BM25 Lexical Ranking
+        tokenized_corpus = [clean_tokens(c) for c in chunks]
+        bm25 = BM25Okapi(tokenized_corpus)
+        bm25_scores = bm25.get_scores(q_tokens)
+        bm25_ranked_indices = np.argsort(bm25_scores)[::-1]
+        bm25_rank_map = {idx: rank + 1 for rank, idx in enumerate(bm25_ranked_indices)}
+        
+        # 2. Dense Semantic Ranking
+        q_emb = self.encoder.encode([query])
+        c_embs = self.encoder.encode(chunks)
+        dense_sims = cosine_similarity(q_emb, c_embs)[0]
+        dense_ranked_indices = np.argsort(dense_sims)[::-1]
+        dense_rank_map = {idx: rank + 1 for rank, idx in enumerate(dense_ranked_indices)}
+        
+        # 3. Reciprocal Rank Fusion
+        rrf_results = []
         for i, chunk in enumerate(chunks):
-            c_tokens = set(clean_tokens(chunk))
-            lex_score = len(q_tokens.intersection(c_tokens)) / max(1, len(q_tokens))
-            hybrid_score = 0.5 * dense_scores[i] + 0.5 * lex_score
-            combined_scores.append((i, chunk, hybrid_score))
+            r_bm25 = bm25_rank_map[i]
+            r_dense = dense_rank_map[i]
+            rrf_score = (1.0 / (k_rrf + r_bm25)) + (1.0 / (k_rrf + r_dense))
+            rrf_results.append((i, chunk, rrf_score))
             
-        combined_scores.sort(key=lambda x: x[2], reverse=True)
-        return combined_scores[:top_k]
+        rrf_results.sort(key=lambda x: x[2], reverse=True)
+        return rrf_results[:top_k]
+
+    def retrieve_cross_encoder_rerank(self, query: str, chunks: List[str], top_k=3, candidate_k=5) -> List[Tuple[int, str, float]]:
+        """
+        Stage 2: 2-Stage Retrieval Pipeline.
+        1. Hybrid RRF retrieves top candidate pool.
+        2. Cross-Encoder computes deep joint cross-attention over (Query, Chunk) pairs.
+        """
+        # Step 1: Candidate retrieval via Hybrid RRF
+        candidates = self.retrieve_hybrid_rrf(query, chunks, top_k=min(len(chunks), candidate_k))
+        
+        # Step 2: Cross-Encoder Re-ranking
+        if self.cross_encoder is not None:
+            pairs = [[query, c[1]] for c in candidates]
+            ce_scores = self.cross_encoder.predict(pairs)
+            reranked = [(candidates[idx][0], candidates[idx][1], float(ce_scores[idx])) for idx in range(len(candidates))]
+        else:
+            # Fallback exact match token boost
+            q_toks = set(clean_tokens(query))
+            reranked = []
+            for idx, c in enumerate(candidates):
+                c_toks = set(clean_tokens(c[1]))
+                tok_score = len(q_toks.intersection(c_toks)) / max(1, len(q_toks))
+                reranked.append((c[0], c[1], c[2] + tok_score * 0.1))
+                
+        reranked.sort(key=lambda x: x[2], reverse=True)
+        return reranked[:top_k]
+
+    def retrieve_clinical_sections(self, query: str, chunks: List[str], top_k=3, strategy="cross_encoder") -> List[Tuple[int, str, float]]:
+        """Unified retrieval dispatcher."""
+        if strategy == "naive":
+            return self.retrieve_naive(query, chunks, top_k=top_k)
+        elif strategy == "hybrid_rrf":
+            return self.retrieve_hybrid_rrf(query, chunks, top_k=top_k)
+        else:
+            return self.retrieve_cross_encoder_rerank(query, chunks, top_k=top_k)
 
     def compute_context_precision(self, retrieved_sections, target_idx: int) -> float:
         """Checks if the target clinical finding section is ranked at the top."""
@@ -159,7 +244,7 @@ class MedVisionRagasEvaluator:
         sim = float(cosine_similarity(q_emb, a_emb)[0][0])
         return max(0.0, min(1.0, (sim + 1.0) / 2.0))
 
-    def evaluate_model(self, model_mode="medvision") -> Dict[str, Any]:
+    def evaluate_model(self, model_mode="medvision", retrieval_strategy="cross_encoder") -> Dict[str, Any]:
         records = []
         t0 = time.perf_counter()
         
@@ -170,8 +255,8 @@ class MedVisionRagasEvaluator:
             target_idx = item["target_chunk_idx"]
             facts = item["key_facts"]
             
-            # 1. Retrieve clinical sections
-            retrieved = self.retrieve_clinical_sections(q, chunks, top_k=3)
+            # 1. Retrieve clinical sections with specified strategy
+            retrieved = self.retrieve_clinical_sections(q, chunks, top_k=3, strategy=retrieval_strategy)
             ctx_retrieved = "\n".join([r[1] for r in retrieved])
             all_report_text = "\n".join(chunks)
             
@@ -199,6 +284,7 @@ class MedVisionRagasEvaluator:
         
         return {
             "model_mode": model_mode,
+            "retrieval_strategy": retrieval_strategy,
             "context_precision": float(df["context_precision"].mean()),
             "context_recall": float(df["context_recall"].mean()),
             "faithfulness": float(df["faithfulness"].mean()),
@@ -208,44 +294,48 @@ class MedVisionRagasEvaluator:
         }
 
 def run_medvision_ragas_evaluation():
-    print("=" * 80)
-    print("MEDVISION: RAGAS CLINICAL REPORT QA & DE-IDENTIFICATION EVALUATION")
-    print("=" * 80)
-    print("Evaluating Medical Imaging Grounding & Zero-Hallucination Diagnostic Compliance:")
-    print("  - Context Precision : Radiology Section Ranking (Findings vs Impression)")
-    print("  - Context Recall    : Pathology & Anatomy Coverage")
-    print("  - Faithfulness      : Zero Clinical Hallucination (No phantom pleural effusion/masses)")
-    print("  - Answer Relevancy  : Radiologist query satisfaction")
-    print("-" * 80)
+    print("=" * 95)
+    print("MEDVISION: ADVANCED CLINICAL RAG & HIPAA COMPLIANCE EVALUATION HARNESS")
+    print("=" * 95)
+    print("Evaluating 2-Stage Retrieval (BM25 + Dense RRF -> Cross-Encoder Re-ranking) across 4 Ragas Dimensions:")
+    print("  1. Context Precision : Radiology Section Ranking (Findings vs Impression)")
+    print("  2. Context Recall    : Pathology & Anatomy Coverage")
+    print("  3. Faithfulness      : Zero Clinical Hallucination (No phantom pleural effusion/masses)")
+    print("  4. Answer Relevancy  : Radiologist query satisfaction")
+    print("-" * 95)
     
     evaluator = MedVisionRagasEvaluator()
     
-    print("\n[1/2] Evaluating Standard Un-grounded LLM Baseline...")
-    baseline_res = evaluator.evaluate_model("baseline")
+    print("\n[1/3] Pipeline A: Ungrounded Baseline + Naive Bi-Encoder Retrieval...")
+    baseline_res = evaluator.evaluate_model("baseline", retrieval_strategy="naive")
     
-    print("[2/2] Evaluating MedVision Grounded Clinical Pipeline...")
-    medvision_res = evaluator.evaluate_model("medvision")
+    print("[2/3] Pipeline B: MedVision Grounded + Hybrid BM25 & Dense RRF...")
+    hybrid_rrf_res = evaluator.evaluate_model("medvision", retrieval_strategy="hybrid_rrf")
+    
+    print("[3/3] Pipeline C: MedVision Grounded + 2-Stage RRF & Cross-Encoder Re-ranking...")
+    cross_encoder_res = evaluator.evaluate_model("medvision", retrieval_strategy="cross_encoder")
     
     # Scorecard Table
-    print("\n" + "=" * 80)
-    print("RAGAS EVALUATION SCORECARD: UNGROUNDED BASELINE vs MEDVISION GROUNDED")
-    print("=" * 80)
+    print("\n" + "=" * 95)
+    print("RAGAS EVALUATION SCORECARD: 2-STAGE RETRIEVAL & CLINICAL GROUNDING")
+    print("=" * 95)
+    print(f"{'Ragas Metric':<24} | {'Naive Baseline':<16} | {'Hybrid RRF (Retr)':<18} | {'2-Stage + Re-rank':<18} | {'Total Gain':<12}")
+    print("-" * 95)
     
     metrics = [
-        ("Context Precision", baseline_res["context_precision"], medvision_res["context_precision"]),
-        ("Context Recall", baseline_res["context_recall"], medvision_res["context_recall"]),
-        ("Clinical Faithfulness", baseline_res["faithfulness"], medvision_res["faithfulness"]),
-        ("Answer Relevancy", baseline_res["answer_relevancy"], medvision_res["answer_relevancy"]),
+        ("Context Precision", baseline_res["context_precision"], hybrid_rrf_res["context_precision"], cross_encoder_res["context_precision"]),
+        ("Context Recall", baseline_res["context_recall"], hybrid_rrf_res["context_recall"], cross_encoder_res["context_recall"]),
+        ("Clinical Faithfulness", baseline_res["faithfulness"], hybrid_rrf_res["faithfulness"], cross_encoder_res["faithfulness"]),
+        ("Answer Relevancy", baseline_res["answer_relevancy"], hybrid_rrf_res["answer_relevancy"], cross_encoder_res["answer_relevancy"]),
     ]
     
-    print(f"{'Ragas Metric':<24} | {'Ungrounded Baseline':<19} | {'MedVision Grounded':<19} | {'Delta / Gain':<16}")
-    print("-" * 80)
-    for name, b_val, f_val in metrics:
-        delta = (f_val - b_val) * 100
-        delta_str = f"{delta:+.2f}%" if delta != 0 else "0.00% (Parity)"
-        print(f"{name:<24} | {b_val:>17.4f}  | {f_val:>17.4f}  | {delta_str:<16}")
-    print(f"{'Section Retrieval Latency':<24} | {baseline_res['latency_ms']:>16.3f} ms | {medvision_res['latency_ms']:>16.3f} ms | {'Real-time':<16}")
-    print("=" * 80)
+    for name, m_naive, m_rrf, m_ce in metrics:
+        total_gain = (m_ce - m_naive) * 100
+        gain_str = f"{total_gain:+.2f}%" if total_gain != 0 else "0.00%"
+        print(f"{name:<24} | {m_naive:>14.4f}  | {m_rrf:>16.4f}  | {m_ce:>16.4f}  | {gain_str:<12}")
+        
+    print(f"{'Retrieval Latency':<24} | {baseline_res['latency_ms']:>13.3f} ms | {hybrid_rrf_res['latency_ms']:>15.3f} ms | {cross_encoder_res['latency_ms']:>15.3f} ms | {'Real-time [FAST]':<12}")
+    print("=" * 95)
     
     # Save results to outputs/
     output_dir = os.path.join(os.path.dirname(__file__), "..", "outputs")
@@ -256,8 +346,9 @@ def run_medvision_ragas_evaluation():
         json.dump({
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "benchmark": "MedVision Clinical Radiology & HIPAA De-identification QA",
-            "baseline": baseline_res,
-            "medvision": medvision_res
+            "pipeline_naive_baseline": baseline_res,
+            "pipeline_hybrid_rrf": hybrid_rrf_res,
+            "pipeline_cross_encoder_rerank": cross_encoder_res
         }, f, indent=4)
         
     print(f"\n[DONE] MedVision Ragas benchmark report saved to: {out_file}")

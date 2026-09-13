@@ -23,6 +23,7 @@ pandas
 
 # Evaluation & Ragas
 sentence-transformers
+rank-bm25>=0.2.2
 ragas==0.2.14
 datasets
 

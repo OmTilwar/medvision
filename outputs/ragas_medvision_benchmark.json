@@ -1,18 +1,19 @@
 {
-    "timestamp": "2026-09-13 15:31:34",
+    "timestamp": "2026-09-13 16:19:26",
     "benchmark": "MedVision Clinical Radiology & HIPAA De-identification QA",
-    "baseline": {
+    "pipeline_naive_baseline": {
         "model_mode": "baseline",
-        "context_precision": 0.75,
+        "retrieval_strategy": "naive",
+        "context_precision": 0.7083333333333333,
         "context_recall": 0.7749999999999999,
         "faithfulness": 0.6478174603174602,
         "answer_relevancy": 0.7729040533304214,
-        "latency_ms": 61.51622500328813,
+        "latency_ms": 101.77487500186544,
         "details": [
             {
                 "case_id": "CXR-001",
                 "modality": "Chest X-Ray (PA View)",
-                "context_precision": 0.5,
+                "context_precision": 0.3333333333333333,
                 "context_recall": 1.0,
                 "faithfulness": 0.5555555555555556,
                 "answer_relevancy": 0.7919772267341614,
@@ -47,13 +48,14 @@
             }
         ]
     },
-    "medvision": {
+    "pipeline_hybrid_rrf": {
         "model_mode": "medvision",
-        "context_precision": 0.75,
+        "retrieval_strategy": "hybrid_rrf",
+        "context_precision": 0.875,
         "context_recall": 0.7749999999999999,
         "faithfulness": 0.9214285714285714,
         "answer_relevancy": 0.7668594010174274,
-        "latency_ms": 18.138374987756833,
+        "latency_ms": 29.6118749974994,
         "details": [
             {
                 "case_id": "CXR-001",
@@ -67,7 +69,7 @@
             {
                 "case_id": "CXR-002",
                 "modality": "Chest X-Ray (AP View)",
-                "context_precision": 0.5,
+                "context_precision": 1.0,
                 "context_recall": 0.5,
                 "faithfulness": 1.0,
                 "answer_relevancy": 0.8446354568004608,
@@ -87,6 +89,53 @@
                 "modality": "HIPAA De-identification Report",
                 "context_precision": 1.0,
                 "context_recall": 0.8,
+                "faithfulness": 0.7857142857142857,
+                "answer_relevancy": 0.6399420648813248,
+                "output": "Patient Name, MRN, Date of Birth, Date of Service, and Accession Number were de-identified per DICOM PS3.15 Annex E."
+            }
+        ]
+    },
+    "pipeline_cross_encoder_rerank": {
+        "model_mode": "medvision",
+        "retrieval_strategy": "cross_encoder",
+        "context_precision": 0.875,
+        "context_recall": 0.725,
+        "faithfulness": 0.9214285714285714,
+        "answer_relevancy": 0.7668594010174274,
+        "latency_ms": 24.878399999579415,
+        "details": [
+            {
+                "case_id": "CXR-001",
+                "modality": "Chest X-Ray (PA View)",
+                "context_precision": 0.5,
+                "context_recall": 1.0,
+                "faithfulness": 1.0,
+                "answer_relevancy": 0.7587271928787231,
+                "output": "Bilateral lower lobe patchy consolidation consistent with bacterial pneumonia. No pleural effusion or pneumothorax identified."
+            },
+            {
+                "case_id": "CXR-002",
+                "modality": "Chest X-Ray (AP View)",
+                "context_precision": 1.0,
+                "context_recall": 0.5,
+                "faithfulness": 1.0,
+                "answer_relevancy": 0.8446354568004608,
+                "output": "Mild cardiomegaly with cardiothoracic ratio approximately 0.55. Mild pulmonary vascular congestion without overt pulmonary edema."
+            },
+            {
+                "case_id": "CXR-003",
+                "modality": "CT Thorax Windowing (Lung Window)",
+                "context_precision": 1.0,
+                "context_recall": 0.8,
+                "faithfulness": 0.9,
+                "answer_relevancy": 0.824132889509201,
+                "output": "A 4mm subpleural non-calcified nodule in right upper lobe. No mediastinal or hilar lymphadenopathy."
+            },
+            {
+                "case_id": "PHI-004",
+                "modality": "HIPAA De-identification Report",
+                "context_precision": 1.0,
+                "context_recall": 0.6,
                 "faithfulness": 0.7857142857142857,
                 "answer_relevancy": 0.6399420648813248,
                 "output": "Patient Name, MRN, Date of Birth, Date of Service, and Accession Number were de-identified per DICOM PS3.15 Annex E."
