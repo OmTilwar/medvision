@@ -36,7 +36,7 @@ uvicorn>=0.23
 python-multipart>=0.0.6
 
 # Interpretability
-pytorch-grad-cam>=1.5
+grad-cam>=1.5.0
 
 # Utilities
 tqdm>=4.65
