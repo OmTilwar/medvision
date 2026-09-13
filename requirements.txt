@@ -19,6 +19,12 @@ pytesseract>=0.3.10
 numpy>=1.24
 scikit-learn>=1.3
 scipy>=1.11
+pandas
+
+# Evaluation & Ragas
+sentence-transformers
+ragas==0.2.14
+datasets
 
 # Visualization
 matplotlib>=3.7
