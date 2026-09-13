@@ -1,0 +1,96 @@
+{
+    "timestamp": "2026-09-13 15:31:34",
+    "benchmark": "MedVision Clinical Radiology & HIPAA De-identification QA",
+    "baseline": {
+        "model_mode": "baseline",
+        "context_precision": 0.75,
+        "context_recall": 0.7749999999999999,
+        "faithfulness": 0.6478174603174602,
+        "answer_relevancy": 0.7729040533304214,
+        "latency_ms": 61.51622500328813,
+        "details": [
+            {
+                "case_id": "CXR-001",
+                "modality": "Chest X-Ray (PA View)",
+                "context_precision": 0.5,
+                "context_recall": 1.0,
+                "faithfulness": 0.5555555555555556,
+                "answer_relevancy": 0.7919772267341614,
+                "output": "Pneumonia present. Trace pleural effusion noted in left costophrenic angle."
+            },
+            {
+                "case_id": "CXR-002",
+                "modality": "Chest X-Ray (AP View)",
+                "context_precision": 0.5,
+                "context_recall": 0.5,
+                "faithfulness": 0.7142857142857143,
+                "answer_relevancy": 0.8182316422462463,
+                "output": "Cardiomegaly present with cardiothoracic ratio 0.65. Severe pulmonary edema."
+            },
+            {
+                "case_id": "CXR-003",
+                "modality": "CT Thorax Windowing (Lung Window)",
+                "context_precision": 1.0,
+                "context_recall": 0.8,
+                "faithfulness": 0.5714285714285714,
+                "answer_relevancy": 0.7730498909950256,
+                "output": "12mm mass in right upper lobe with mediastinal lymphadenopathy."
+            },
+            {
+                "case_id": "PHI-004",
+                "modality": "HIPAA De-identification Report",
+                "context_precision": 1.0,
+                "context_recall": 0.8,
+                "faithfulness": 0.75,
+                "answer_relevancy": 0.7083574533462524,
+                "output": "Patient name and age redacted."
+            }
+        ]
+    },
+    "medvision": {
+        "model_mode": "medvision",
+        "context_precision": 0.75,
+        "context_recall": 0.7749999999999999,
+        "faithfulness": 0.9214285714285714,
+        "answer_relevancy": 0.7668594010174274,
+        "latency_ms": 18.138374987756833,
+        "details": [
+            {
+                "case_id": "CXR-001",
+                "modality": "Chest X-Ray (PA View)",
+                "context_precision": 0.5,
+                "context_recall": 1.0,
+                "faithfulness": 1.0,
+                "answer_relevancy": 0.7587271928787231,
+                "output": "Bilateral lower lobe patchy consolidation consistent with bacterial pneumonia. No pleural effusion or pneumothorax identified."
+            },
+            {
+                "case_id": "CXR-002",
+                "modality": "Chest X-Ray (AP View)",
+                "context_precision": 0.5,
+                "context_recall": 0.5,
+                "faithfulness": 1.0,
+                "answer_relevancy": 0.8446354568004608,
+                "output": "Mild cardiomegaly with cardiothoracic ratio approximately 0.55. Mild pulmonary vascular congestion without overt pulmonary edema."
+            },
+            {
+                "case_id": "CXR-003",
+                "modality": "CT Thorax Windowing (Lung Window)",
+                "context_precision": 1.0,
+                "context_recall": 0.8,
+                "faithfulness": 0.9,
+                "answer_relevancy": 0.824132889509201,
+                "output": "A 4mm subpleural non-calcified nodule in right upper lobe. No mediastinal or hilar lymphadenopathy."
+            },
+            {
+                "case_id": "PHI-004",
+                "modality": "HIPAA De-identification Report",
+                "context_precision": 1.0,
+                "context_recall": 0.8,
+                "faithfulness": 0.7857142857142857,
+                "answer_relevancy": 0.6399420648813248,
+                "output": "Patient Name, MRN, Date of Birth, Date of Service, and Accession Number were de-identified per DICOM PS3.15 Annex E."
+            }
+        ]
+    }
+}
