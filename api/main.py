@@ -39,8 +39,14 @@ def get_classifier():
     global _classifier
     if _classifier is None:
         if os.path.exists(config.CLASSIFIER_BEST_PATH):
-            from src.classifier import load_classifier
-            _classifier = load_classifier(config.CLASSIFIER_BEST_PATH)
+            try:
+                from src.classifier import load_classifier
+                _classifier = load_classifier(config.CLASSIFIER_BEST_PATH)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Classifier model weights not loadable: {str(e)}"
+                )
         else:
             raise HTTPException(
                 status_code=503,
@@ -54,8 +60,14 @@ def get_segmenter():
     global _segmenter
     if _segmenter is None:
         if os.path.exists(config.SEGMENTER_BEST_PATH):
-            from src.segmenter import load_segmenter
-            _segmenter = load_segmenter(config.SEGMENTER_BEST_PATH)
+            try:
+                from src.segmenter import load_segmenter
+                _segmenter = load_segmenter(config.SEGMENTER_BEST_PATH)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Segmenter model weights not loadable: {str(e)}"
+                )
         else:
             raise HTTPException(
                 status_code=503,
