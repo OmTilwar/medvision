@@ -113,7 +113,10 @@ class TestMedicalClassifier:
         
         # Load checkpoint
         model2 = MedicalClassifier(num_classes=2, pretrained=False)
-        loaded = torch.load(tmp_path, map_location='cpu', weights_only=True)
+        try:
+            loaded = torch.load(tmp_path, map_location='cpu', weights_only=False)
+        except TypeError:
+            loaded = torch.load(tmp_path, map_location='cpu')
         model2.load_state_dict(loaded['model_state_dict'])
         
         # Verify outputs match

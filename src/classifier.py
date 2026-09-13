@@ -188,7 +188,10 @@ def load_classifier(checkpoint_path: str, device: torch.device = None) -> Medica
         pretrained=False,
     )
     
-    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
+    try:
+        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+    except TypeError:
+        checkpoint = torch.load(checkpoint_path, map_location=device)
     
     if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
         model.load_state_dict(checkpoint["model_state_dict"])

@@ -286,8 +286,10 @@ def train(
     print("  Final Test Set Evaluation")
     print("=" * 60)
     
-    # Load best model for test evaluation
-    best_checkpoint = torch.load(config.CLASSIFIER_BEST_PATH, map_location=device, weights_only=True)
+    try:
+        best_checkpoint = torch.load(config.CLASSIFIER_BEST_PATH, map_location=device, weights_only=False)
+    except TypeError:
+        best_checkpoint = torch.load(config.CLASSIFIER_BEST_PATH, map_location=device)
     model.load_state_dict(best_checkpoint['model_state_dict'])
     
     test_metrics = validate(model, test_loader, criterion, device)
