@@ -23,7 +23,7 @@ jobs:
     - name: Install System Dependencies (Tesseract OCR & OpenGL)
       run: |
         sudo apt-get update
-        sudo apt-get install -y tesseract-ocr libtesseract-dev libgl1-mesa-glx libglib2.0-0
+        sudo apt-get install -y tesseract-ocr libtesseract-dev libgl1 libglib2.0-0
 
     - name: Install Python Dependencies
       run: |
