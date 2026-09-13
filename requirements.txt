@@ -40,3 +40,8 @@ pytorch-grad-cam>=1.5
 
 # Utilities
 tqdm>=4.65
+
+# Testing
+pytest>=7.4.0
+httpx>=0.25.0
+
