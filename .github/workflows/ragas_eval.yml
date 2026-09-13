@@ -1,0 +1,45 @@
+name: MedVision Clinical QA & Ragas Evaluation
+
+on:
+  push:
+    branches: [ main, master, feat/structured-mask-export ]
+  pull_request:
+    branches: [ main, master, feat/structured-mask-export ]
+
+jobs:
+  medvision-evaluate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+        cache: "pip"
+
+    - name: Install System Dependencies (Tesseract OCR)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y tesseract-ocr libtesseract-dev
+
+    - name: Install Python Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Test Suite (60 Tests)
+      run: |
+        python -m pytest tests/ -v
+
+    - name: Run Ragas Clinical Report QA Evaluation
+      run: |
+        python src/ragas_clinical_eval.py
+
+    - name: Upload Clinical Benchmark Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: medvision-ragas-report
+        path: outputs/ragas_medvision_benchmark.json
