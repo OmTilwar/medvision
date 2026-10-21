@@ -10,41 +10,28 @@ A comprehensive medical imaging toolkit for chest X-ray classification, lung seg
 - **PHI De-identification** — HIPAA-compliant removal of Protected Health Information from DICOM files and medical reports
 - **OCR Pipeline** — Tesseract-based text extraction from scanned medical documents with entity detection
 - **Model Interpretability** — Grad-CAM heatmaps showing disease-specific attention regions
-- **Ragas Clinical QA Evaluation** — Quantitative zero-hallucination benchmarking for clinical reports and DICOM metadata
-- **REST API** — FastAPI server with 6 endpoints for production-ready model serving
-- **Tested** — 50+ unit and integration tests
+- **Clinical Report Retrieval (prototype)** — BM25 + dense retrieval fused with RRF and cross-encoder re-ranking over radiology report sections, with a small sanity-check harness
+- **REST API** — FastAPI server with 6 endpoints for model serving
+- **Tested** — 60+ unit and integration tests
 
 ---
 
-## 📐 Ragas Clinical Report QA & HIPAA Compliance Evaluation
+## 🧪 Clinical Report Retrieval — Prototype Sanity Check
 
-To ensure clinical reports and diagnostic Q&A have **zero medical hallucinations** and strictly adhere to ground-truth radiology findings, we integrated the **Ragas** evaluation framework:
+`src/ragas_clinical_eval.py` prototypes section retrieval over radiology reports (Findings / Impression / Indications) and compares three strategies: naive dense retrieval, hybrid BM25 + dense fused with Reciprocal Rank Fusion (RRF), and hybrid + cross-encoder re-ranking.
 
-1. **Context Precision (0.75):** Accurately retrieves the specific clinical section (Findings vs Impression vs Indications).
-2. **Context Recall (0.78):** Captures 100% of documented pathologies (consolidation, effusions, nodules).
-3. **Clinical Faithfulness (0.92 vs 0.65, +27.4% gain):** Guarantees that diagnostic statements made by the model strictly reflect the patient's radiology scan without inventing phantom diagnoses or exaggerated dimensions.
-4. **Answer Relevancy (0.77):** Concise, high-density alignment with physician and radiologist queries.
+**Scope and limitations:**
+- **4 hand-written report cases.**
+- **Retrieval is real**; the answers being scored are **stored reference strings** ("grounded" vs "ungrounded"), not model output.
+- Scores are embedding-similarity heuristics *modelled on* the Ragas metric definitions. The script does **not** call the Ragas library.
 
-### 📊 Clinical Ragas Scorecard
+With 4 cases and no live generation, this confirms the retrieval pipeline runs end to end; it is not a measure of clinical QA quality, so no scores are reported as results.
 
-```text
-================================================================================
-MEDVISION: RAGAS CLINICAL REPORT QA & DE-IDENTIFICATION SCORECARD
-================================================================================
-Ragas Metric             | Ungrounded Baseline | MedVision Grounded  | Delta / Gain    
---------------------------------------------------------------------------------
-Context Precision        |            0.7500   |            0.7500   | 0.00% (Parity)  
-Context Recall           |            0.7750   |            0.7750   | 0.00% (Parity)  
-Clinical Faithfulness    |            0.6478   |            0.9214   | +27.36% 🏆      
-Answer Relevancy         |            0.7729   |            0.7669   | High Alignment  
-Section Latency          |           61.516 ms |           18.138 ms | Real-time ⚡    
-================================================================================
-```
-
-To run the automated MedVision Ragas evaluation suite:
 ```bash
-python src/ragas_clinical_eval.py
+python src/ragas_clinical_eval.py   # writes outputs/ragas_medvision_benchmark.json
 ```
+
+**Planned:** report QA over the public IU X-Ray (OpenI) radiology reports with live LLM generation, evaluated with the Ragas library on 100+ questions.
 
 ---
 
@@ -121,28 +108,6 @@ Medical Report Image
 │  [REDACTED] placeholders │
 └──────────────────────────┘
 ```
-
-### 📊 Ragas Clinical Evaluation & 2-Stage Retrieval Scorecard
-
-```text
-===============================================================================================
-MEDVISION: ADVANCED CLINICAL RAG & HIPAA COMPLIANCE EVALUATION HARNESS
-===============================================================================================
-Ragas Metric             | Naive Baseline   | Hybrid RRF (Retr)  | 2-Stage + Re-rank  | Total Gain  
------------------------------------------------------------------------------------------------
-Context Precision        |         0.7083  |           0.8750  |           0.8750  | +16.67% 🚀  
-Context Recall           |         0.7750  |           0.7750  |           0.7750  | 0.00% (Solid)
-Clinical Faithfulness    |         0.6478  |           0.9214  |           0.9214  | +27.36% 🏆  
-Answer Relevancy         |         0.7729  |           0.7669  |           0.7669  | High Fidelity
-Retrieval Latency        |       101.775 ms |          29.612 ms |          24.878 ms | Real-time [FAST]
-===============================================================================================
-```
-
-To run the automated Clinical QA & Ragas evaluation suite:
-```bash
-python src/ragas_clinical_eval.py
-```
-*(Benchmark report is exported to `outputs/ragas_medvision_benchmark.json`)*
 
 ---
 

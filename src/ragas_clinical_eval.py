@@ -1,11 +1,17 @@
 """
-MedVision: Clinical Document QA & HIPAA Compliance Evaluation with Ragas
-========================================================================
-Evaluates Medical Report Grounding & Zero-Hallucination QA across 4 Ragas dimensions:
-  1. Context Precision  -> Radiology Findings & Impression Section Ranking (RRF + Cross-Encoder)
-  2. Context Recall     -> Anatomical & Pathology Coverage (Consolidation, Effusion, Atelectasis)
-  3. Faithfulness       -> Strict Clinical Grounding (Zero Hallucination of phantom pathologies)
-  4. Answer Relevancy   -> Physician Prompt & Radiologist Query Alignment
+MedVision: Clinical Report Retrieval — Prototype Sanity Check
+=============================================================
+Compares section retrieval strategies (naive dense, hybrid BM25 + dense with RRF,
+hybrid + cross-encoder re-ranking) on 4 hand-written radiology report cases.
+
+Scores are Ragas-style heuristics (embedding similarity / keyword coverage) modelled on:
+  1. Context Precision  -> is the target report section ranked first?
+  2. Context Recall     -> are the key findings present in the retrieved context?
+  3. Faithfulness       -> are answer sentences supported by the report text?
+  4. Answer Relevancy   -> is the answer similar to the question?
+
+Limitations: this does NOT call the ragas library, and the scored answers are stored
+reference strings, not live model output. Use it as a wiring check, not a benchmark.
 """
 
 import os
