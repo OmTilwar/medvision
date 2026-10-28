@@ -36,9 +36,23 @@ Confusion matrix and ROC curve: `outputs/visualizations/test_confusion_matrix.pn
 python scripts/evaluate_test_set.py
 ```
 
-### Segmentation — not yet benchmarked
+### Segmentation — 5-fold cross-validation on Montgomery County
 
-The U-Net was trained on a 40-image lung-mask sample (32 train / 8 validation), which is too small to report a reliable Dice score. Benchmarking on a full public lung-segmentation set (e.g. Montgomery + Shenzhen) is planned.
+U-Net (17.3M params, trained from scratch) on the [NLM Montgomery County CXR set](https://data.lhncbc.nlm.nih.gov/public/Tuberculosis-Chest-X-ray-Datasets/Montgomery-County-CXR-Set/MontgomerySet/): 138 frontal chest X-rays with manual lung masks, one image per patient. Each fold trains for a fixed 40 epochs and is scored once at the end, so held-out images never influence checkpoint selection; every image is scored exactly once by a model that never saw it.
+
+| Metric (138 out-of-fold images) | Mean ± SD | Median | Worst image |
+|---|---|---|---|
+| Dice | 0.975 ± 0.020 | 0.981 | 0.869 |
+| IoU | 0.951 ± 0.035 | 0.963 | 0.768 |
+
+Per-fold Dice ranges from 0.969 to 0.979. Per-image scores: `outputs/results/segmenter_cv_results.json`; examples: `outputs/visualizations/montgomery_cv_examples.png`. Reproduce with:
+
+```bash
+python scripts/prepare_montgomery.py        # downloads and prepares the 138 image/mask pairs
+python scripts/cross_validate_segmenter.py  # 5-fold CV (~17 min on an RTX 4050), then trains the final model
+```
+
+> Earlier versions of this repo trained the U-Net on 40 synthetic placeholder images; those results are superseded.
 
 ---
 

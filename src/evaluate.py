@@ -364,10 +364,11 @@ def plot_segmentation_results(
         axes = axes[np.newaxis, :]
     
     for i in range(n):
-        # Original image
+        # Original image, rescaled to [0, 1] (inputs may be mean/std normalized)
         img = images[i]
         if img.ndim == 3 and img.shape[0] == 3:
             img = np.transpose(img, (1, 2, 0))
+        img = (img - img.min()) / max(float(img.max() - img.min()), 1e-8)
         axes[i, 0].imshow(img, cmap='gray' if img.ndim == 2 else None)
         axes[i, 0].set_title("X-Ray", fontsize=10)
         axes[i, 0].axis('off')
