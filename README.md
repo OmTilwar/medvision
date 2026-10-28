@@ -54,6 +54,23 @@ python scripts/cross_validate_segmenter.py  # 5-fold CV (~17 min on an RTX 4050)
 
 > Earlier versions of this repo trained the U-Net on 40 synthetic placeholder images; those results are superseded.
 
+### De-identification — DICOM PS3.15 profile
+
+`src/deidentify.py` implements the DICOM PS3.15 Basic Application Level Confidentiality Profile with the Retain Safe Private, Retain Longitudinal Temporal Information (Modified Dates), Retain Patient Characteristics, Clean Descriptors and Clean Structured Content options. The action table (657 attributes) and safe-private list are generated from the standard's own DocBook source (`scripts/build_ps315_profile.py`), not hand-picked.
+
+- Deterministic pseudonymization: UIDs, patient IDs and per-patient date offsets come from a keyed hash, so studies and series stay consistent across files and parallel workers
+- Header-informed cleaning: names, IDs and institution names found in a file's own header are detected in free text; fields containing them are suppressed
+- Pixel data is untouched unless OCR burned-in text redaction is enabled
+
+Batch runs on the [MIDI-B](https://doi.org/10.7937/cf2p-aw56) validation set (23,921 DICOM files, CT/MR/PET/CR/DX/MG/US/SR) complete with 0 failures:
+
+```bash
+python scripts/download_midi_b.py --manifest <MIDI-B .tcia manifest> --out-dir <dir>
+python scripts/deidentify_dataset.py --input <dir> --output <out> --method ps315
+```
+
+Scoring with NCI's official MIDI validation script is in progress.
+
 ---
 
 ## 🧪 Clinical Report Retrieval — Prototype Sanity Check
