@@ -1,0 +1,48 @@
+{
+  "checkpoint": "outputs/models/classifier_best.pth",
+  "test_dir": "data/chest_xray/test",
+  "evaluated_at": "2026-10-28T20:51:12",
+  "device": "cuda",
+  "n_samples": 624,
+  "class_counts": {
+    "NORMAL": 234,
+    "PNEUMONIA": 390
+  },
+  "accuracy": 0.9182692307692307,
+  "auc_roc": 0.9736138505369274,
+  "precision_macro": 0.9107125498201614,
+  "recall_macro": 0.9166666666666667,
+  "f1_macro": 0.9134669505420552,
+  "per_class": {
+    "NORMAL": {
+      "precision": 0.8765432098765432,
+      "recall": 0.9102564102564102,
+      "f1": 0.8930817610062893,
+      "support": 234
+    },
+    "PNEUMONIA": {
+      "precision": 0.9448818897637795,
+      "recall": 0.9230769230769231,
+      "f1": 0.933852140077821,
+      "support": 390
+    }
+  },
+  "confusion_matrix": [
+    [
+      213,
+      21
+    ],
+    [
+      30,
+      360
+    ]
+  ],
+  "sensitivity": 0.9230769230769231,
+  "specificity": 0.9102564102564102,
+  "ppv": 0.9448818897637795,
+  "npv": 0.8765432098765432,
+  "tp": 360,
+  "tn": 213,
+  "fp": 21,
+  "fn": 30
+}

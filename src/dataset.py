@@ -10,7 +10,7 @@ from typing import Optional, Tuple, List, Dict
 
 import numpy as np
 import torch
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import Dataset, DataLoader, Subset, random_split
 from torchvision import transforms
 from PIL import Image
 
@@ -342,16 +342,20 @@ def create_segmentation_dataloaders(
         train_dataset = SegmentationDataset(root_dir=train_dir, is_train=True)
         val_dataset = SegmentationDataset(root_dir=val_dir, is_train=False)
     else:
-        # Single directory — split automatically
-        full_dataset = SegmentationDataset(root_dir=data_dir, is_train=True)
-        n_total = len(full_dataset)
+        # Single directory — split automatically. Build separate train-mode and
+        # eval-mode views so validation images are not randomly augmented.
+        train_view = SegmentationDataset(root_dir=data_dir, is_train=True)
+        eval_view = SegmentationDataset(root_dir=data_dir, is_train=False)
+        n_total = len(train_view)
         n_train = int(n_total * 0.8)
         n_val = n_total - n_train
-        
-        train_dataset, val_dataset = random_split(
-            full_dataset, [n_train, n_val],
+
+        train_split, val_split = random_split(
+            range(n_total), [n_train, n_val],
             generator=torch.Generator().manual_seed(42),
         )
+        train_dataset = Subset(train_view, list(train_split))
+        val_dataset = Subset(eval_view, list(val_split))
     
     print(f"\n{'='*60}")
     print("Segmentation Dataset Summary")

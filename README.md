@@ -16,6 +16,32 @@ A comprehensive medical imaging toolkit for chest X-ray classification, lung seg
 
 ---
 
+## Results
+
+### Classification — held-out test set
+
+ResNet-18 (`outputs/models/classifier_best.pth`, selected on the validation split) evaluated on the **624-image test split** (234 NORMAL / 390 PNEUMONIA), which is never used for training or checkpoint selection.
+
+| Metric | Value |
+|---|---|
+| Accuracy | 91.8% |
+| AUC-ROC | 0.974 |
+| Sensitivity (pneumonia recall) | 92.3% |
+| Specificity | 91.0% |
+| PPV / NPV | 94.5% / 87.6% |
+
+Confusion matrix and ROC curve: `outputs/visualizations/test_confusion_matrix.png`, `outputs/visualizations/test_roc_curve.png`. Raw numbers: `outputs/results/classifier_test_results.json`. Reproduce with:
+
+```bash
+python scripts/evaluate_test_set.py
+```
+
+### Segmentation — not yet benchmarked
+
+The U-Net was trained on a 40-image lung-mask sample (32 train / 8 validation), which is too small to report a reliable Dice score. Benchmarking on a full public lung-segmentation set (e.g. Montgomery + Shenzhen) is planned.
+
+---
+
 ## 🧪 Clinical Report Retrieval — Prototype Sanity Check
 
 `src/ragas_clinical_eval.py` prototypes section retrieval over radiology reports (Findings / Impression / Indications) and compares three strategies: naive dense retrieval, hybrid BM25 + dense fused with Reciprocal Rank Fusion (RRF), and hybrid + cross-encoder re-ranking.
